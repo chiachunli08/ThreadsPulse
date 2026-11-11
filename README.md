@@ -35,6 +35,20 @@ No jailbreak needed: build your own Threads IPA with ThreadsPulse injected using
 
 ---
 
+## Lee Su Threads in this fork
+
+Native integration targets Threads **455.0.0**, plugin **1.18.4-leesu.1**.
+
+Open **Pulse → Lee Su Threads → Connect Threads Web Session**, sign in to Threads on the web, and tap Done. This web session is separate from the native app; verify the web account when switching app accounts. Author locations appear beside the native post header, or at the avatar's lower edge in compact layouts. Tap a badge for the join date.
+
+The MIT parser and web request are adapted from [Lee-Su-Threads](https://github.com/meettomorrow/lee-su-threads), with attribution in `vendor/lee-su-threads`. Authentication stays in WKWebView; profile requests go directly to Threads. The website/API may change and require an update.
+
+Visible authors are queried at most once per three seconds, with a 15-second request timeout. HTTP 429 pauses queries for 15 minutes; other failures retry after five minutes. Public profiles are cached by user ID for 72 hours (up to 2,000). Settings include profile lists, location counts, JSON export, and cache clearing. Credentials are never exported. New-user labels follow the upstream code's month rule (current and previous two months), not an exact 30-day age. Hidden locations stay hidden.
+
+The Build workflow includes the dylib, resource bundle and Safari extension. Download it and inject locally with `scripts/inject_ipa.py`; the source IPA need not be uploaded. Run `node --test tests/leesu_bridge.test.cjs` and the macOS cache/date tests in `.github/workflows/test-leesu.yml`. Compilation and binary metadata checks do not replace on-device verification of login, badges and live responses.
+
+---
+
 ## Build your own IPA with GitHub Actions (no jailbreak, recommended)
 
 ### What you need

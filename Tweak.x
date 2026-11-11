@@ -19,6 +19,7 @@
 #import "TPHUD.h"
 #import "TPVersion.h"
 #import "TPSideloadFix.h"
+#import "TPLeeSu.h"
 
 @interface NSObject (TPDecl)
 - (void)tp_threeFingerLongPress:(id)gesture;
@@ -2034,9 +2035,17 @@ static BOOL TPTreeContainsUserRecs(UIViewController *vc, int depth) {
 
 #pragma mark - 初始化
 
+%group LeeSu
+// Class and layout selector verified against the supplied Threads 455.0 binary.
+%hook _TtC21BCNFeedItemHeaderCell32BCNFeedItemHeaderCellContentView
+- (void)layoutSubviews { %orig; TPLeeSuUpdateHeader((UIView *)self); }
+%end
+%end
+
 %ctor {
     @autoreleasepool {
         TPSideloadFixInstall();       // 要在 Threads 開始使用鑰匙圈之前
+        %init(LeeSu);
         %init(Ads);
         %init(Tracking);
         %init(Download);

@@ -143,3 +143,26 @@
 "Sideload Compatibility Fix" = "Sideload Compatibility Fix";
 "Keeps you signed in and app group data working after re-signing. Only active on re-signed apps; takes effect after reopening Threads" = "Keeps you signed in and app group data working after re-signing. Only active on re-signed apps; takes effect after reopening Threads";
 "Copy Name" = "Copy Name";
+
+// Lee Su Threads
+"Lee Su Threads" = "Lee Su Threads";
+"Lee Su Threads Login" = "Lee Su Threads Login";
+"Reload" = "Reload";
+"Connect a Threads web session once to show author locations and join dates. Data stays on this device for 72 hours. Tap a badge for details." = "Connect a Threads web session once to show author locations and join dates. Data stays on this device for 72 hours. Tap a badge for details.";
+"Show Author Locations" = "Show Author Locations";
+"Mark Recently Joined Users" = "Mark Recently Joined Users";
+"Connect Threads Web Session" = "Connect Threads Web Session";
+"Profiles & Location Statistics" = "Profiles & Location Statistics";
+"Export Profile Data" = "Export Profile Data";
+"Clear Profile Cache" = "Clear Profile Cache";
+"Lee Su Threads connected" = "Lee Su Threads connected";
+"Finish signing in to Threads on the web, then tap Done" = "Finish signing in to Threads on the web, then tap Done";
+"Lee Su Threads paused for 15 minutes (rate limit)" = "Lee Su Threads paused for 15 minutes (rate limit)";
+"Connect Threads in Pulse → Lee Su Threads" = "Connect Threads in Pulse → Lee Su Threads";
+"Based in" = "Based in";
+"Joined" = "Joined";
+"Not shared" = "Not shared";
+"Location Statistics" = "Location Statistics";
+"Cached Profiles" = "Cached Profiles";
+"Profile cache cleared" = "Profile cache cleared";
+"Public profile data stays on this device for 72 hours. New-user marks use month precision (current month and previous two months)." = "Public profile data stays on this device for 72 hours. New-user marks use month precision (current month and previous two months).";

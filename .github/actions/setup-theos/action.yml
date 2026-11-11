@@ -54,6 +54,6 @@ runs:
       id: ver
       shell: bash
       run: |
-        VERSION=$(grep -oE 'TP_VERSION @"[^"]+"' TPVersion.h | grep -oE '[0-9][0-9.]*')
+        VERSION=$(sed -n 's/^#define TP_VERSION @"\([^"]*\)".*/\1/p' TPVersion.h)
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "ThreadsPulse 版本：$VERSION"

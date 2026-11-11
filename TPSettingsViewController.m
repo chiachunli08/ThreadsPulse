@@ -1,5 +1,6 @@
 #import "TPSettingsViewController.h"
 #import "TPPrefs.h"
+#import "TPLeeSu.h"
 #import "TPDownloader.h"
 #import "TPLocalization.h"
 #import "TPHUD.h"
@@ -193,6 +194,16 @@ static NSString *TPTimePreview(NSInteger mode) {
 
     // TP_MODEL_BEGIN — 這裡的文字都是「英文 key」，顯示時才經 TPL() 轉成目前語系
     _sections = @[
+        @{ @"header": @"Lee Su Threads",
+           @"footer": @"Connect a Threads web session once to show author locations and join dates. Data stays on this device for 72 hours. Tap a badge for details.",
+           @"rows": @[
+               @{ @"type": @"switch", @"key": TPKeyLeeSu, @"title": @"Show Author Locations", @"icon": @"globe.asia.australia", @"color": UIColor.systemTealColor },
+               @{ @"type": @"switch", @"key": TPKeyLeeSuNew, @"title": @"Mark Recently Joined Users", @"icon": @"person.badge.clock", @"color": UIColor.systemGreenColor },
+               @{ @"type": @"action", @"action": @"leesuLogin", @"title": @"Connect Threads Web Session", @"icon": @"person.crop.circle.badge.checkmark", @"color": UIColor.systemBlueColor },
+               @{ @"type": @"action", @"action": @"leesuProfiles", @"title": @"Profiles & Location Statistics", @"icon": @"list.bullet", @"color": UIColor.systemTealColor },
+               @{ @"type": @"action", @"action": @"leesuExport", @"title": @"Export Profile Data", @"icon": @"square.and.arrow.up", @"color": UIColor.systemBlueColor },
+               @{ @"type": @"action", @"action": @"leesuClear", @"title": @"Clear Profile Cache", @"icon": @"trash", @"color": UIColor.systemRedColor },
+           ]},
         @{ @"header": @"Ads & Privacy",
            @"footer": @"Turning ad blocking on or off takes effect after refreshing the feed or restarting the app.",
            @"rows": @[
@@ -556,7 +567,11 @@ static BOOL TPConditionUsesKey(NSArray *cond, NSString *key) {
     NSDictionary *row = [self rowAt:ip];
     NSString *type = row[@"type"];
     if ([type isEqualToString:@"action"]) {
-        if ([row[@"action"] isEqualToString:@"export"]) [self exportSettingsFrom:cell];
+        if ([row[@"action"] isEqualToString:@"leesuLogin"]) TPLeeSuShowLogin(self);
+        else if ([row[@"action"] isEqualToString:@"leesuProfiles"]) TPLeeSuShowProfiles(self);
+        else if ([row[@"action"] isEqualToString:@"leesuExport"]) TPLeeSuExport(self, cell);
+        else if ([row[@"action"] isEqualToString:@"leesuClear"]) TPLeeSuClear();
+        else if ([row[@"action"] isEqualToString:@"export"]) [self exportSettingsFrom:cell];
         else [self importSettings];
     } else if ([type isEqualToString:@"link"]) {
         [self openLink:row[@"url"]];

@@ -143,3 +143,26 @@
 "Sideload Compatibility Fix" = "側載相容修正";
 "Keeps you signed in and app group data working after re-signing. Only active on re-signed apps; takes effect after reopening Threads" = "重新簽名後保持登入，並讓 App 群組資料正常讀寫。只在重新簽名的 App 上啟用；變更後重新開啟 Threads 生效";
 "Copy Name" = "複製姓名";
+
+// Lee Su Threads
+"Lee Su Threads" = "Lee Su Threads";
+"Lee Su Threads Login" = "Lee Su Threads 登入";
+"Reload" = "重新載入";
+"Connect a Threads web session once to show author locations and join dates. Data stays on this device for 72 hours. Tap a badge for details." = "首次使用請登入 Threads 網頁工作階段，即可顯示作者地點與加入時間。資料只在本機快取 72 小時，點標記可看詳細資料。";
+"Show Author Locations" = "顯示作者所在地點";
+"Mark Recently Joined Users" = "標示近期加入的用戶";
+"Connect Threads Web Session" = "登入 Threads 網頁工作階段";
+"Profiles & Location Statistics" = "個人資料與地點統計";
+"Export Profile Data" = "匯出個人資料";
+"Clear Profile Cache" = "清除個人資料快取";
+"Lee Su Threads connected" = "Lee Su Threads 已連線";
+"Finish signing in to Threads on the web, then tap Done" = "請完成 Threads 網頁登入後，再點完成";
+"Lee Su Threads paused for 15 minutes (rate limit)" = "Threads 限制查詢速率，Lee Su Threads 暫停 15 分鐘";
+"Connect Threads in Pulse → Lee Su Threads" = "請到 Pulse → Lee Su Threads 登入 Threads 網頁工作階段";
+"Based in" = "所在地點";
+"Joined" = "加入時間";
+"Not shared" = "未分享";
+"Location Statistics" = "地點統計";
+"Cached Profiles" = "已快取的個人資料";
+"Profile cache cleared" = "已清除個人資料快取";
+"Public profile data stays on this device for 72 hours. New-user marks use month precision (current month and previous two months)." = "公開個人資料只在本機快取 72 小時。新用戶標記依月份判斷（本月及前兩個月），無法精確到天數。";

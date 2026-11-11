@@ -58,8 +58,10 @@ jobs:
           mkdir -p build/trollfools
           cp .theos/obj/ThreadsPulse.dylib build/trollfools/
           cp -R "layout/Library/Application Support/ThreadsPulse/ThreadsPulse.bundle" build/trollfools/
+          $MAKE -C OpenThreadsSafariExtension
+          cp -R OpenThreadsSafariExtension/.theos/obj/OpenThreadsSafariExtension.appex build/trollfools/
           (cd build/trollfools && zip -qry "../../dist/ThreadsPulse_TrollFools_${VERSION}.zip" \
-              ThreadsPulse.dylib ThreadsPulse.bundle)
+              ThreadsPulse.dylib ThreadsPulse.bundle OpenThreadsSafariExtension.appex)
 
           ls -la dist
 

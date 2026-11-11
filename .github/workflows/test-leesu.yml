@@ -1,0 +1,22 @@
+name: Lee Su Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify reproducible bridge bundle
+        run: |
+          python3 scripts/build_leesu_bridge.py
+          git diff --exit-code -- layout
+      - name: Parser and session bridge tests
+        run: node --test tests/leesu_bridge.test.cjs
+      - name: Native cache and date tests
+        run: |
+          clang -fobjc-arc -framework Foundation -I. TPLeeSuCache.m tests/leesu_cache_test.m -o /tmp/leesu-cache-test
+          /tmp/leesu-cache-test

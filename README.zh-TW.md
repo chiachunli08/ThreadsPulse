@@ -35,6 +35,23 @@ Threads（`com.burbn.barcelona`）的 iOS 增強插件。目前版本：**1.18.3
 
 ---
 
+## 此 fork：Lee Su Threads 原生整合
+
+目標版本：Threads **455.0.0**；插件版本：**1.18.4-leesu.1**。
+
+- 原生貼文標頭顯示作者所在地點；空間不足時改在頭像下緣顯示小標記，點擊可看加入時間。
+- 在 **Pulse → Lee Su Threads → 登入 Threads 網頁工作階段** 登入 Threads 網頁，完成後點「完成」。這是獨立的網頁工作階段，不會自動沿用 App 登入；若 App 切換帳號，請自行在此確認／切換網頁帳號。
+- 沿用 [Lee-Su-Threads](https://github.com/meettomorrow/lee-su-threads) 的 About This Profile 解析器與網頁 API；所有請求直接到 Threads，登入憑證保留在 WKWebView 內。網站或 API 更新可能需要調整整合。
+- 每 3 秒最多查一位目前可見的作者，單一請求超時 15 秒；HTTP 429 會暫停 15 分鐘，失敗的作者 5 分鐘後才重試。
+- 個人資料依 Threads user ID 快取 72 小時、最多 2,000 筆；設定中可看地點統計、匯出 JSON 或清除快取。只有公開個人資料會匯出，登入憑證不會匯出。
+- 近期加入標記採用來源程式碼現行的月份規則：本月及前兩個月。API 只有月份精度，無法精確判斷「未滿 30 天」。未分享的地點維持顯示未分享。
+
+GitHub Actions 編譯驗證與本機注入可以分開：Build workflow 只上傳插件與 Safari 延伸功能，下載後使用 `scripts/inject_ipa.py` 注入本機 IPA，不必上傳原始 IPA。
+
+驗證：`node --test tests/leesu_bridge.test.cjs`；macOS 的原生快取／日期測試見 `.github/workflows/test-leesu.yml`。靜態類別驗證和編譯不等同實機驗證，首次安裝仍須確認網頁登入、作者標記與查詢結果。
+
+---
+
 ## 用 GitHub Actions 自己編譯 IPA（免越獄，推薦）
 
 ### 事前準備

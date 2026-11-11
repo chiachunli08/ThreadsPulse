@@ -57,3 +57,5 @@ NSString *TPLocalized(NSString *key) {
     if (!b) return key;
     return [b localizedStringForKey:key value:key table:nil];
 }
+
+NSBundle *TPResourceBundle(void) { return TPBundle(); }

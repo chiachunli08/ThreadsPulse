@@ -1,5 +1,7 @@
 #import "TPPrefs.h"
 #import "TPVersion.h"
+NSString *const TPKeyLeeSu = @"tp_leesu_enabled";
+NSString *const TPKeyLeeSuNew = @"tp_leesu_new_users";
 
 NSString *const TPKeyBlockAds        = @"tp_block_ads";
 NSString *const TPKeyStripTracking   = @"tp_strip_tracking";
@@ -28,7 +30,7 @@ static NSString *const kSuite = @"com.example.threadspulse";
 static NSArray<NSString *> *TPBoolKeys(void) {
     return @[TPKeyBlockAds, TPKeyStripTracking, TPKeyShowDownloadBtn, TPKeyDebugToast,
              TPKeyOriginalImage, TPKeyOriginalAvatar, TPKeyClipboardLinks, TPKeyConfirmLike, TPKeyKeepFeed, TPKeyHideFollowSuggest, TPKeyPinTabBar, TPKeyCopyProfile, TPKeySideloadFix,
-             TPKeyNoPullRefresh, TPKeyTabNoScrollTop, TPKeyTabNoRefresh];
+             TPKeyNoPullRefresh, TPKeyTabNoScrollTop, TPKeyTabNoRefresh, TPKeyLeeSu, TPKeyLeeSuNew];
 }
 static NSArray<NSString *> *TPIntKeys(void) {
     return @[TPKeyPlaySpeed, TPKeyExactTime, TPKeyClipboardMode, TPKeyBannerPosition, TPKeyKeepFeedLimit];
@@ -51,6 +53,7 @@ static NSInteger TPIntMax(NSString *key) {
     dispatch_once(&once, ^{
         d = [[NSUserDefaults alloc] initWithSuiteName:kSuite];
         [d registerDefaults:@{
+            TPKeyLeeSu: @YES, TPKeyLeeSuNew: @YES,
             TPKeyBlockAds: @YES,        TPKeyStripTracking: @YES,   TPKeyShowDownloadBtn: @YES,
             TPKeyDebugToast: @NO,       TPKeyOriginalImage: @YES,
             TPKeyPlaySpeed: @0,

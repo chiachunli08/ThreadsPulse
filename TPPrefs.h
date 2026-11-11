@@ -1,6 +1,8 @@
 #import <Foundation/Foundation.h>
 
 // ---- 布林設定 ----
+extern NSString *const TPKeyLeeSu;
+extern NSString *const TPKeyLeeSuNew;
 extern NSString *const TPKeyBlockAds;        // 去廣告
 extern NSString *const TPKeyStripTracking;   // 移除網址追蹤碼
 extern NSString *const TPKeyShowDownloadBtn; // 下載按鈕（貼文上的批次下載、全螢幕檢視的單張／單支下載）
