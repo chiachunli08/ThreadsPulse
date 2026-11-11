@@ -112,7 +112,16 @@ static BOOL TPTrustedURL(NSURL *url) {
     return NO;
 }
 - (void)pump {
-    if (self.busy || self.scheduled || !self.ready || self.pausedUntil > TPNow() || ![TPPrefs boolForKey:TPKeyLeeSu]) return;
+    if (self.busy || self.scheduled || !self.ready || ![TPPrefs boolForKey:TPKeyLeeSu]) return;
+    if (self.pausedUntil > TPNow()) {
+        self.scheduled = YES;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.pausedUntil - TPNow() + 1) * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            self.scheduled = NO;
+            for (UIView *h in self.headers.allObjects) [self update:h];
+            [self pump];
+        });
+        return;
+    }
     NSString *userID;
     while (self.queue.count) {
         NSString *candidate = self.queue.firstObject; [self.queue removeObjectAtIndex:0];
