@@ -72,6 +72,7 @@ Threads（`com.burbn.barcelona`）的 iOS 增強插件。目前版本：**1.18.3
 3. 左側選 **Build IPA** → 右側 **Run workflow**：
    - **ipa_url**：IPA 網址。已設定 Secret 就留空。
    - **variant**：`both`（兩種都產出，預設）、`sideload`、`noplugins`。
+   - **release_tag**：留空只上傳 Artifact；填入新的標籤（例如 `v1.18.3-custom1`）則建立 GitHub Release 並附上 IPA。標籤不可已存在，Release 對應本次執行的 commit。
 4. 按 **Run workflow**，約 5～10 分鐘完成。
 5. 點進該次執行，頁面最下方 **Artifacts** 下載 `Threads_<版本>_Pulse_<版本>_sideload` 或 `…_noplugins`，解壓後就是 IPA。
 6. 用你的簽名工具安裝。Artifact 會在 3 天後自動刪除。
@@ -84,7 +85,7 @@ Threads（`com.burbn.barcelona`）的 iOS 增強插件。目前版本：**1.18.3
 | 這個 IPA 尚未解密 | 用的是 App Store 加密版本，請換成已解密的 IPA |
 | 執行檔的 header 空間不足 | 極少見；請回報 Threads 版本 |
 
-> 請不要把產出的 IPA 上傳到公開的 Release 或任何公開位置。
+> 上游專案建議不要公開發佈 IPA。公開 fork 的 Release 和 IPA 會公開，且 IPA 包含 Threads 本體；只有在你有權散布時才填寫 `release_tag`。未填標籤不會建立 Release。
 
 ---
 

@@ -15,9 +15,13 @@ on:
           - sideload
           - noplugins
         default: both
+      release_tag:
+        description: 'Optional new tag to publish the IPA as a GitHub Release; leave empty for artifacts only｜選填新標籤以發布 IPA；留空只上傳 Artifact'
+        required: false
+        default: ''
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   SDK_VERSION: '16.5'
@@ -29,6 +33,28 @@ jobs:
     steps:
       - name: 取得原始碼
         uses: actions/checkout@v4
+
+      - name: 驗證 Release 標籤
+        if: inputs.release_tag != ''
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9][A-Za-z0-9._-]*$ ]] || ! git check-ref-format "refs/tags/$RELEASE_TAG"; then
+            echo '::error::Release 標籤須以 v 和數字開頭，並只包含英數、點、底線或連字號。'
+            exit 1
+          fi
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null || status=$?
+          if [ "$status" -eq 0 ]; then
+            echo '::error::此標籤已存在，請使用新標籤。'
+            exit 1
+          fi
+          if [ "$status" -ne 2 ]; then
+            echo '::error::無法檢查遠端標籤。'
+            exit 1
+          fi
 
       - name: 確認 IPA 網址
         env:
@@ -115,3 +141,17 @@ jobs:
           path: dist/*_noplugins.ipa
           retention-days: 3
           compression-level: 0
+
+      - name: 發布 IPA Release
+        if: inputs.release_tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          REPOSITORY: ${{ github.repository }}
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" dist/*.ipa \
+            --repo "$REPOSITORY" --target "$BUILD_SHA" \
+            --title "ThreadsPulse $RELEASE_TAG" \
+            --notes 'Unsigned IPA. Sign with your own signing tool before installation.'

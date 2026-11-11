@@ -72,6 +72,7 @@ After installing, go to **Settings › Apps › Safari › Extensions** (on iOS 
 3. Select **Build IPA** on the left → **Run workflow** on the right:
    - **ipa_url**: the IPA link. Leave it empty if you set the Secret.
    - **variant**: `both` (default, builds both), `sideload` or `noplugins`.
+   - **release_tag**: leave empty for artifacts only, or enter a new tag (for example `v1.18.3-custom1`) to publish a GitHub Release with the IPAs. The tag must not already exist; it points to the commit used for the run.
 4. Click **Run workflow**. It takes about 5–10 minutes.
 5. Open the run, and at the bottom under **Artifacts**, download `Threads_<version>_Pulse_<version>_sideload` or `…_noplugins`. Unzip it to get the IPA.
 6. Install it with your signing tool. Artifacts are deleted automatically after 3 days.
@@ -84,7 +85,7 @@ After installing, go to **Settings › Apps › Safari › Extensions** (on iOS 
 | 這個 IPA 尚未解密 | This IPA isn't decrypted | It's the encrypted App Store version; use a decrypted IPA |
 | 執行檔的 header 空間不足 | Not enough header space in the executable | Very rare; please report your Threads version |
 
-> Please don't upload the IPA to a public Release or anywhere public.
+> The upstream project advises against publishing IPAs. A Release on a public fork and its IPA assets are public, and the IPA contains Threads itself. Only provide `release_tag` if you have the rights to distribute it. Leaving it empty does not create a Release.
 
 ---
 
