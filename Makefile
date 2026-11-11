@@ -7,7 +7,7 @@ INSTALL_TARGET_PROCESSES = Threads
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = ThreadsPulse
-ThreadsPulse_FILES = Tweak.x TPLocalization.m TPPrefs.m TPURLCleaner.m TPDownloader.m TPHUD.m TPUI.m TPSettingsViewController.m TPSideloadFix.m TPLeeSu.m TPLeeSuCache.m
+ThreadsPulse_FILES = Tweak.x TPLocalization.m TPPrefs.m TPURLCleaner.m TPDownloader.m TPHUD.m TPUI.m TPSettingsViewController.m TPSideloadFix.m TPLeeSu.m TPLeeSuCache.m TPLeeSuLocation.m
 ThreadsPulse_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable
 ThreadsPulse_FRAMEWORKS = UIKit Photos AVFoundation UniformTypeIdentifiers SafariServices Security WebKit
 # 用 ObjC runtime 直接 hook，不依賴 CydiaSubstrate（側載注入 IPA 時不必附 Substrate）

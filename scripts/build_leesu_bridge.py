@@ -13,3 +13,4 @@ sources.append((root / 'scripts/leesu_bridge.js').read_text())
 bundle = root / 'layout/Library/Application Support/ThreadsPulse/ThreadsPulse.bundle'
 (bundle / 'LeeSuBridge.js').write_text('// Lee-Su-Threads: MIT license in LeeSu-LICENSE.txt\n(() => {\n' + '\n'.join(sources) + '\n})();\n')
 (bundle / 'LeeSu-LICENSE.txt').write_text((root / 'vendor/lee-su-threads/LICENSE').read_text())
+(bundle / 'LeeSuLocationFlags.json').write_bytes((root / 'vendor/lee-su-threads/location-flags.json').read_bytes())

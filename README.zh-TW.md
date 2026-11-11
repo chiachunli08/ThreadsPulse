@@ -37,9 +37,9 @@ Threads（`com.burbn.barcelona`）的 iOS 增強插件。目前版本：**1.18.3
 
 ## 此 fork：Lee Su Threads 原生整合
 
-目標版本：Threads **455.0.0**；插件版本：**1.18.4-leesu.1**。
+目標版本：Threads **455.0.0**；插件版本：**1.18.4-leesu.2**。
 
-- 原生貼文標頭顯示作者所在地點；空間不足時改在頭像下緣顯示小標記，點擊可看加入時間。
+- 原生貼文標頭、詳細資料與統計以「國旗 emoji＋地區名稱」顯示作者所在地點（例如 🇹🇼 台灣、🇯🇵 日本）。未分享或無法辨識的地點保留原文；空間不足時改在頭像下緣顯示小標記，點擊可看加入時間。
 - 在 **Pulse → Lee Su Threads → 登入 Threads 網頁工作階段** 登入 Threads 網頁，完成後點「完成」。這是獨立的網頁工作階段，不會自動沿用 App 登入；若 App 切換帳號，請自行在此確認／切換網頁帳號。
 - 沿用 [Lee-Su-Threads](https://github.com/meettomorrow/lee-su-threads) 的 About This Profile 解析器與網頁 API；所有請求直接到 Threads，登入憑證保留在 WKWebView 內。網站或 API 更新可能需要調整整合。
 - 每 3 秒最多查一位目前可見的作者，單一請求超時 15 秒；HTTP 429 會暫停 15 分鐘，失敗的作者 5 分鐘後才重試。

@@ -1,5 +1,6 @@
 #import "TPLeeSu.h"
 #import "TPLeeSuCache.h"
+#import "TPLeeSuLocation.h"
 #import "TPPrefs.h"
 #import "TPDownloader.h"
 #import "TPHUD.h"
@@ -152,7 +153,7 @@ static BOOL TPTrustedURL(NSURL *url) {
     NSString *userID = objc_getAssociatedObject(button, TPLeeSuUserKey);
     NSDictionary *p = [self.cache profileForID:userID now:TPNow()];
     NSString *message;
-    if (p) message = [NSString stringWithFormat:@"%@: %@\n%@: %@", TPL(@"Based in"), [p[@"location"] length] ? p[@"location"] : TPL(@"Not shared"), TPL(@"Joined"), [p[@"joined"] length] ? p[@"joined"] : @"—"];
+    if (p) message = [NSString stringWithFormat:@"%@: %@\n%@: %@", TPL(@"Based in"), [p[@"location"] length] ? TPLeeSuLocationLabel(p[@"location"]) : TPL(@"Not shared"), TPL(@"Joined"), [p[@"joined"] length] ? p[@"joined"] : @"—"];
     else message = TPL(@"Connect Threads in Pulse → Lee Su Threads");
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:p[@"username"] ?: @"Lee Su Threads" message:message preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:TPL(@"Done") style:UIAlertActionStyleCancel handler:nil]];
@@ -185,7 +186,7 @@ static BOOL TPTrustedURL(NSURL *url) {
     }
     objc_setAssociatedObject(button, TPLeeSuUserKey, userID, OBJC_ASSOCIATION_COPY_NONATOMIC);
     NSDictionary *profile = [self.cache profileForID:userID now:TPNow()];
-    NSString *title = profile ? ([profile[@"location"] length] ? profile[@"location"] : TPL(@"Not shared")) : @"⌖";
+    NSString *title = profile ? ([profile[@"location"] length] ? TPLeeSuLocationLabel(profile[@"location"]) : TPL(@"Not shared")) : @"⌖";
     // Upstream dates have month precision; use its current two-month new-user rule.
     if ([TPPrefs boolForKey:TPKeyLeeSuNew] && TPLeeSuRecentAt(profile[@"joined"], NSDate.date)) title = [@"🆕 " stringByAppendingString:title];
     [button setTitle:title forState:UIControlStateNormal];
@@ -239,11 +240,11 @@ static BOOL TPTrustedURL(NSURL *url) {
     UITableViewCell *cell = [table dequeueReusableCellWithIdentifier:@"profile"];
     if (!cell) cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"profile"];
     if (path.section == 0) {
-        NSString *s = self.locations[path.row]; cell.textLabel.text = [NSString stringWithFormat:@"%@ · %@", s, self.counts[s]]; cell.detailTextLabel.text = nil;
+        NSString *s = self.locations[path.row]; cell.textLabel.text = [NSString stringWithFormat:@"%@ · %@", TPLeeSuLocationLabel(s), self.counts[s]]; cell.detailTextLabel.text = nil;
     } else {
         NSDictionary *p = self.profiles[path.row];
         NSString *name = [p[@"username"] length] ? [@"@" stringByAppendingString:p[@"username"]] : p[@"userID"];
-        cell.textLabel.text = [NSString stringWithFormat:@"%@ · %@", name, p[@"location"] ?: @"—"];
+        cell.textLabel.text = [NSString stringWithFormat:@"%@ · %@", name, [p[@"location"] length] ? TPLeeSuLocationLabel(p[@"location"]) : @"—"];
         cell.detailTextLabel.text = [NSString stringWithFormat:@"%@: %@", TPL(@"Joined"), p[@"joined"] ?: @"—"];
     }
     cell.selectionStyle = UITableViewCellSelectionStyleNone; return cell;

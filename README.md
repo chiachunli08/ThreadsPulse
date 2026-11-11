@@ -37,9 +37,9 @@ No jailbreak needed: build your own Threads IPA with ThreadsPulse injected using
 
 ## Lee Su Threads in this fork
 
-Native integration targets Threads **455.0.0**, plugin **1.18.4-leesu.1**.
+Native integration targets Threads **455.0.0**, plugin **1.18.4-leesu.2**.
 
-Open **Pulse → Lee Su Threads → Connect Threads Web Session**, sign in to Threads on the web, and tap Done. This web session is separate from the native app; verify the web account when switching app accounts. Author locations appear beside the native post header, or at the avatar's lower edge in compact layouts. Tap a badge for the join date.
+Open **Pulse → Lee Su Threads → Connect Threads Web Session**, sign in to Threads on the web, and tap Done. This web session is separate from the native app; verify the web account when switching app accounts. Author locations use flag emoji plus the original region name (for example 🇹🇼 台灣 or 🇯🇵 日本) in badges, details and statistics. Unknown/unshared locations retain their text. Author locations appear beside the native post header, or at the avatar's lower edge in compact layouts. Tap a badge for the join date.
 
 The MIT parser and web request are adapted from [Lee-Su-Threads](https://github.com/meettomorrow/lee-su-threads), with attribution in `vendor/lee-su-threads`. Authentication stays in WKWebView; profile requests go directly to Threads. The website/API may change and require an update.
 

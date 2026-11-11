@@ -16,7 +16,7 @@ jobs:
           git diff --exit-code -- layout
       - name: Parser and session bridge tests
         run: node --test tests/leesu_bridge.test.cjs
-      - name: Native cache and date tests
+      - name: Native cache, date and location label tests
         run: |
-          clang -fobjc-arc -framework Foundation -I. TPLeeSuCache.m tests/leesu_cache_test.m -o /tmp/leesu-cache-test
+          clang -fobjc-arc -framework Foundation -I. TPLeeSuCache.m TPLeeSuLocation.m tests/leesu_cache_test.m -o /tmp/leesu-cache-test
           /tmp/leesu-cache-test
