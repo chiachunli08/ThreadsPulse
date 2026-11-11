@@ -1,6 +1,7 @@
 #import "TPLeeSu.h"
 #import "TPLeeSuCache.h"
 #import "TPLeeSuLocation.h"
+#import "TPLeeSuScheduler.h"
 #import "TPPrefs.h"
 #import "TPDownloader.h"
 #import "TPHUD.h"
@@ -10,28 +11,51 @@
 
 static const void *TPLeeSuButtonKey = &TPLeeSuButtonKey;
 static const void *TPLeeSuUserKey = &TPLeeSuUserKey;
+@class TPLeeSuManager;
+static TPLeeSuManager *gTPLeeSuManager;
 static NSTimeInterval TPNow(void) { return NSDate.date.timeIntervalSince1970; }
 static BOOL TPTrustedURL(NSURL *url) {
     return [url.scheme isEqualToString:@"https"] &&
         ([(url.host ?: @"") isEqualToString:@"www.threads.com"] || [url.host isEqualToString:@"threads.com"]);
 }
 
-@interface TPLeeSuManager : NSObject <WKNavigationDelegate, WKUIDelegate>
+static BOOL TPLeeSuHeaderOnScreen(UIView *header) {
+    UIWindow *window = header.window;
+    if (!window) return NO;
+    CGRect visible = CGRectIntersection([header convertRect:header.bounds toView:window], window.bounds);
+    for (UIView *v = header; v && v != window; v = v.superview) {
+        if (v.hidden || v.alpha < 0.01) return NO;
+        if (v.clipsToBounds) visible = CGRectIntersection(visible, [v convertRect:v.bounds toView:window]);
+    }
+    return !CGRectIsNull(visible) && !CGRectIsEmpty(visible);
+}
+
+@interface TPLeeSuReadyHandler : NSObject <WKScriptMessageHandler>
+@property(nonatomic, weak) id<WKScriptMessageHandler> target;
+@end
+@implementation TPLeeSuReadyHandler
+- (void)userContentController:(WKUserContentController *)controller didReceiveScriptMessage:(WKScriptMessage *)message {
+    [self.target userContentController:controller didReceiveScriptMessage:message];
+}
+@end
+
+@interface TPLeeSuManager : NSObject <WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler>
 @property(nonatomic, strong) WKWebView *web;
 @property(nonatomic, strong) TPLeeSuCache *cache;
 @property(nonatomic, strong) NSHashTable<UIView *> *headers;
-@property(nonatomic, strong) NSMutableArray<NSString *> *queue;
+@property(nonatomic, strong) TPLeeSuScheduler *scheduler;
 @property(nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *retryAfter;
-@property(nonatomic, copy) NSString *activeID;
-@property(nonatomic) BOOL busy;
 @property(nonatomic) BOOL ready;
-@property(nonatomic) BOOL scheduled;
+@property(nonatomic) BOOL refreshScheduled;
+@property(nonatomic) BOOL refreshingHeaders;
+@property(nonatomic) NSUInteger timerGeneration;
+@property(nonatomic) NSTimeInterval scheduledDeadline;
 @property(nonatomic) NSUInteger generation;
-@property(nonatomic) NSTimeInterval pausedUntil;
 @property(nonatomic, weak) UIViewController *loginController;
 + (instancetype)shared;
 - (void)update:(UIView *)header;
 - (void)pump;
+- (void)requestPump;
 @end
 
 @interface TPLeeSuLoginController : UIViewController
@@ -46,7 +70,7 @@ static BOOL TPTrustedURL(NSURL *url) {
     self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TPL(@"Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancel)];
     self.navigationItem.rightBarButtonItems = @[self.navigationItem.rightBarButtonItem, [[UIBarButtonItem alloc] initWithTitle:TPL(@"Reload") style:UIBarButtonItemStylePlain target:self action:@selector(reload)]];
 }
-- (void)cancel { [self dismissViewControllerAnimated:YES completion:^{ [self.web removeFromSuperview]; }]; }
+- (void)cancel { [self dismissViewControllerAnimated:YES completion:^{ [self.web removeFromSuperview]; [TPLeeSuManager.shared requestPump]; }]; }
 - (void)reload { [self.web loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.threads.com/"]]]; }
 - (void)close {
     [self.web evaluateJavaScript:@"window.TPLeeSu ? window.TPLeeSu.ready() : false" completionHandler:^(id result, NSError *error) {
@@ -67,29 +91,44 @@ static BOOL TPTrustedURL(NSURL *url) {
 @implementation TPLeeSuManager
 + (instancetype)shared {
     static TPLeeSuManager *m; static dispatch_once_t once;
-    dispatch_once(&once, ^{ m = [TPLeeSuManager new]; }); return m;
+    dispatch_once(&once, ^{ m = [TPLeeSuManager new]; gTPLeeSuManager = m; }); return m;
 }
 - (instancetype)init {
     if ((self = [super init])) {
         NSURL *base = [NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask].firstObject;
         _cache = [[TPLeeSuCache alloc] initWithURL:[base URLByAppendingPathComponent:@"ThreadsPulse/LeeSu-profiles.json"]];
-        _headers = NSHashTable.weakObjectsHashTable; _queue = [NSMutableArray array]; _retryAfter = [NSMutableDictionary dictionary];
-        _pausedUntil = [NSUserDefaults.standardUserDefaults doubleForKey:@"TPLeeSuPausedUntil"];
+        _headers = NSHashTable.weakObjectsHashTable; _scheduler = [TPLeeSuScheduler new]; _retryAfter = [NSMutableDictionary dictionary];
+        _scheduler.pausedUntil = [NSUserDefaults.standardUserDefaults doubleForKey:@"TPLeeSuPausedUntil"];
         WKWebViewConfiguration *config = [WKWebViewConfiguration new];
         config.websiteDataStore = WKWebsiteDataStore.defaultDataStore;
+        TPLeeSuReadyHandler *handler = [TPLeeSuReadyHandler new]; handler.target = self;
+        [config.userContentController addScriptMessageHandler:handler name:@"TPLeeSuReady"];
         NSString *script = [NSString stringWithContentsOfURL:[TPResourceBundle() URLForResource:@"LeeSuBridge" withExtension:@"js"] encoding:NSUTF8StringEncoding error:nil];
         if (script) [config.userContentController addUserScript:[[WKUserScript alloc] initWithSource:script injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES]];
         _web = [[WKWebView alloc] initWithFrame:CGRectMake(0, 0, 390, 800) configuration:config];
         _web.navigationDelegate = self; _web.UIDelegate = self;
+        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) { [self requestPump]; }];
+        [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillResignActiveNotification object:nil queue:NSOperationQueue.mainQueue usingBlock:^(NSNotification *note) {
+            self.timerGeneration++; self.scheduledDeadline = 0; [self.scheduler cancelPending];
+        }];
         [_web loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://www.threads.com/"]]];
     }
     return self;
+}
+- (void)webView:(WKWebView *)web didStartProvisionalNavigation:(WKNavigation *)navigation {
+    self.ready = NO; self.generation++; self.timerGeneration++; self.scheduledDeadline = 0;
+    [self.scheduler cancelPending];
+}
+- (void)userContentController:(WKUserContentController *)controller didReceiveScriptMessage:(WKScriptMessage *)message {
+    if (![message.name isEqualToString:@"TPLeeSuReady"] || !message.frameInfo.mainFrame || !TPTrustedURL(message.frameInfo.request.URL)) return;
+    if (![message.body isKindOfClass:NSNumber.class] || ![message.body boolValue]) return;
+    self.ready = YES; [self requestPump];
 }
 - (void)webView:(WKWebView *)web didFinishNavigation:(WKNavigation *)navigation {
     if (!TPTrustedURL(web.URL)) { self.ready = NO; return; }
     [web evaluateJavaScript:@"window.TPLeeSu ? window.TPLeeSu.ready() : false" completionHandler:^(id value, NSError *error) {
         self.ready = !error && [value respondsToSelector:@selector(boolValue)] && [value boolValue];
-        if (self.ready) { for (UIView *h in self.headers.allObjects) [self update:h]; [self pump]; }
+        if (self.ready) { for (UIView *h in self.headers.allObjects) [self update:h]; [self requestPump]; }
     }];
 }
 - (void)webView:(WKWebView *)web decidePolicyForNavigationAction:(WKNavigationAction *)action decisionHandler:(void (^)(WKNavigationActionPolicy))handler {
@@ -104,40 +143,58 @@ static BOOL TPTrustedURL(NSURL *url) {
     if (!action.targetFrame) [web loadRequest:action.request]; return nil;
 }
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)web { self.ready = NO; [web reload]; }
-- (void)schedule {
-    if (self.scheduled) return; self.scheduled = YES;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{ self.scheduled = NO; [self pump]; });
+- (void)requestPump {
+    // Many headers lay out in one scroll frame; refresh the viewport once per run loop.
+    if (self.refreshScheduled) return; self.refreshScheduled = YES;
+    dispatch_async(dispatch_get_main_queue(), ^{ self.refreshScheduled = NO; [self pump]; });
 }
-- (BOOL)visibleID:(NSString *)userID {
-    for (UIView *h in self.headers.allObjects) if (h.window && [objc_getAssociatedObject(h, TPLeeSuUserKey) isEqual:userID]) return YES;
-    return NO;
+- (void)refreshVisibleRequests {
+    NSMutableArray<UIView *> *onScreen = [NSMutableArray array];
+    for (UIView *h in self.headers.allObjects) if (TPLeeSuHeaderOnScreen(h)) [onScreen addObject:h];
+    NSArray<UIView *> *headers = [onScreen sortedArrayUsingComparator:^NSComparisonResult(UIView *a, UIView *b) {
+        CGFloat ay = [a convertRect:a.bounds toView:a.window].origin.y;
+        CGFloat by = [b convertRect:b.bounds toView:b.window].origin.y;
+        return ay < by ? NSOrderedAscending : ay > by ? NSOrderedDescending : NSOrderedSame;
+    }];
+    NSMutableArray *visible = [NSMutableArray array];
+    NSTimeInterval now = TPNow();
+    for (UIView *header in headers) {
+        NSString *userID = objc_getAssociatedObject(header, TPLeeSuUserKey);
+        if (userID.length && ![self.cache profileForID:userID now:now] && [self.retryAfter[userID] doubleValue] <= now) [visible addObject:userID];
+    }
+    [self.scheduler updateVisibleIDs:visible];
+}
+- (void)scheduleNext {
+    NSTimeInterval now = TPNow(), delay = [self.scheduler delayUntilNextAt:now];
+    if (delay < 0) { self.timerGeneration++; self.scheduledDeadline = 0; return; }
+    NSTimeInterval deadline = now + delay;
+    if (self.scheduledDeadline > 0 && self.scheduledDeadline <= deadline + 0.001) return;
+    self.scheduledDeadline = deadline;
+    NSUInteger token = ++self.timerGeneration;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (token != self.timerGeneration) return;
+        self.scheduledDeadline = 0; [self pump];
+    });
 }
 - (void)pump {
-    if (self.busy || self.scheduled || !self.ready || ![TPPrefs boolForKey:TPKeyLeeSu]) return;
-    if (self.pausedUntil > TPNow()) {
-        self.scheduled = YES;
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((self.pausedUntil - TPNow() + 1) * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            self.scheduled = NO;
-            for (UIView *h in self.headers.allObjects) [self update:h];
-            [self pump];
-        });
-        return;
-    }
-    NSString *userID;
-    while (self.queue.count) {
-        NSString *candidate = self.queue.firstObject; [self.queue removeObjectAtIndex:0];
-        if ([self visibleID:candidate] && ![self.cache profileForID:candidate now:TPNow()] && [self.retryAfter[candidate] doubleValue] <= TPNow()) { userID = candidate; break; }
-    }
-    if (!userID || !TPTrustedURL(self.web.URL)) return;
-    self.busy = YES; self.activeID = userID;
+    if (!self.ready || ![TPPrefs boolForKey:TPKeyLeeSu] || UIApplication.sharedApplication.applicationState != UIApplicationStateActive) return;
+    if (self.loginController.isViewLoaded && self.loginController.view.window) return;
+    if (!TPTrustedURL(self.web.URL)) return;
+    // Scrolling can reveal a previously laid-out cell without relaying out its header.
+    self.refreshingHeaders = YES;
+    for (UIView *h in self.headers.allObjects) if (TPLeeSuHeaderOnScreen(h)) [self update:h];
+    self.refreshingHeaders = NO;
+    [self refreshVisibleRequests];
+    NSString *userID = [self.scheduler takeNextAt:TPNow()];
+    if (!userID) { [self scheduleNext]; return; }
     NSUInteger generation = self.generation;
     [self.web callAsyncJavaScript:@"return window.TPLeeSu ? await window.TPLeeSu.profile(userID) : {_loginRequired:true};" arguments:@{@"userID": userID} inFrame:nil inContentWorld:WKContentWorld.pageWorld completionHandler:^(id result, NSError *error) {
-        self.busy = NO; self.activeID = nil;
+        [self.scheduler finishID:userID];
         NSDictionary *info = [result isKindOfClass:NSDictionary.class] ? result : nil;
-        if (generation != self.generation) { [self schedule]; return; }
+        if (generation != self.generation) { [self requestPump]; return; }
         if ([info[@"_rateLimited"] boolValue]) {
-            self.pausedUntil = TPNow() + 15 * 60;
-            [NSUserDefaults.standardUserDefaults setDouble:self.pausedUntil forKey:@"TPLeeSuPausedUntil"];
+            self.scheduler.pausedUntil = TPNow() + 15 * 60;
+            [NSUserDefaults.standardUserDefaults setDouble:self.scheduler.pausedUntil forKey:@"TPLeeSuPausedUntil"];
             [TPHUD toast:TPL(@"Lee Su Threads paused for 15 minutes (rate limit)")];
         } else if ([info[@"_loginRequired"] boolValue]) {
             self.ready = NO;
@@ -145,9 +202,10 @@ static BOOL TPTrustedURL(NSURL *url) {
         } else if (!error && info && !info[@"_error"] && ([info[@"location"] length] || [info[@"joined"] length])) {
             [self.cache store:info userID:userID now:TPNow()];
         } else { self.retryAfter[userID] = @(TPNow() + 5 * 60); }
-        for (UIView *h in self.headers.allObjects) [self update:h];
-        [self schedule];
+        for (UIView *h in self.headers.allObjects) if (TPLeeSuHeaderOnScreen(h)) [self update:h];
+        [self requestPump];
     }];
+    [self scheduleNext];
 }
 - (void)showProfile:(UIButton *)button {
     NSString *userID = objc_getAssociatedObject(button, TPLeeSuUserKey);
@@ -209,10 +267,7 @@ static BOOL TPTrustedURL(NSURL *url) {
         }
     }
     if (!button.hidden) [header bringSubviewToFront:button];
-    if (!profile && self.ready && ![self.activeID isEqual:userID] && ![self.queue containsObject:userID] && [self.retryAfter[userID] doubleValue] <= TPNow()) {
-        if (self.queue.count >= 100) [self.queue removeObjectAtIndex:0];
-        [self.queue addObject:userID]; [self schedule];
-    }
+    if (!profile && self.ready && !self.refreshingHeaders) [self requestPump];
 }
 @end
 
@@ -255,6 +310,10 @@ void TPLeeSuUpdateHeader(UIView *header) {
     if (![TPPrefs boolForKey:TPKeyLeeSu]) { ((UIButton *)objc_getAssociatedObject(header, TPLeeSuButtonKey)).hidden = YES; return; }
     [TPLeeSuManager.shared update:header];
 }
+void TPLeeSuViewportChanged(void) {
+    // Do not initialize WebKit for unrelated scroll views or disabled features.
+    if (gTPLeeSuManager && [TPPrefs boolForKey:TPKeyLeeSu]) [gTPLeeSuManager requestPump];
+}
 void TPLeeSuShowLogin(UIViewController *presenter) {
     TPLeeSuManager *m = TPLeeSuManager.shared;
     TPLeeSuLoginController *vc = [TPLeeSuLoginController new]; vc.web = m.web; m.loginController = vc;
@@ -277,7 +336,7 @@ void TPLeeSuExport(UIViewController *presenter, UIView *source) {
 }
 void TPLeeSuClear(void) {
     TPLeeSuManager *m = TPLeeSuManager.shared;
-    m.generation++; [m.cache clear]; [m.queue removeAllObjects]; [m.retryAfter removeAllObjects];
+    m.generation++; [m.cache clear]; [m.scheduler cancelPending]; [m.retryAfter removeAllObjects];
     for (UIView *header in m.headers.allObjects) {
         ((UIButton *)objc_getAssociatedObject(header, TPLeeSuButtonKey)).hidden = YES;
     }

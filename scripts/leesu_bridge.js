@@ -8,7 +8,10 @@
     jazoest: [/"jazoest"\s*:\s*"?(\d+)"?/],
     __user: [/"viewer"\s*:\s*\{[^}]*"id"\s*:\s*"(\d+)"/, /"USER_ID"\s*:\s*"(\d+)"/, /"(?:viewer_id|current_user_id|userID|viewerID|__user)"\s*:\s*"?(\d{5,})"?/]
   };
+  let cachedSession = null;
+  let sessionExpires = 0;
   function session() {
+    if (cachedSession && Date.now() < sessionExpires) return cachedSession;
     const tokens = {};
     for (const input of document.querySelectorAll('input[name="fb_dtsg"], input[name="lsd"], input[name="jazoest"]')) {
       if (input.value) tokens[input.name] = input.value;
@@ -21,6 +24,10 @@
           if (match) { tokens[name] = match[1]; break; }
         }
       }
+    }
+    if (tokens.fb_dtsg && tokens.__user && tokens.__user !== '0') {
+      cachedSession = tokens;
+      sessionExpires = Date.now() + 60000;
     }
     return tokens;
   }
@@ -43,7 +50,10 @@
           headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'X-FB-Friendly-Name': 'BarcelonaProfileAboutThisProfileAsyncActionQuery'}, body
         });
         if (response.status === 429) return {_rateLimited: true};
-        if (response.status === 401 || response.status === 403) return {_loginRequired: true};
+        if (response.status === 401 || response.status === 403) {
+          cachedSession = null; sessionExpires = 0;
+          return {_loginRequired: true};
+        }
         if (!response.ok) return {_error: 'http'};
         const info = parseProfileResponse(await response.text());
         if (!info || (!info.joined && !info.location)) return {_error: 'unavailable'};
@@ -53,4 +63,7 @@
       finally { clearTimeout(timer); }
     }
   };
+  // Document-end can precede slow image/resource loads and didFinishNavigation.
+  // Send only readiness, never authentication material, across the native bridge.
+  if (window.TPLeeSu.ready()) window.webkit?.messageHandlers?.TPLeeSuReady?.postMessage(true);
 })();

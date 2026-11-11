@@ -20,3 +20,7 @@ jobs:
         run: |
           clang -fobjc-arc -framework Foundation -I. TPLeeSuCache.m TPLeeSuLocation.m tests/leesu_cache_test.m -o /tmp/leesu-cache-test
           /tmp/leesu-cache-test
+      - name: Viewport queue, concurrency, cooldown and timing tests
+        run: |
+          clang -fobjc-arc -framework Foundation -I. TPLeeSuScheduler.m tests/leesu_scheduler_test.m -o /tmp/leesu-scheduler-test
+          /tmp/leesu-scheduler-test

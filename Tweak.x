@@ -2039,6 +2039,14 @@ static BOOL TPTreeContainsUserRecs(UIViewController *vc, int depth) {
 // Class and layout selector verified against the supplied Threads 455.0 binary.
 %hook _TtC21BCNFeedItemHeaderCell32BCNFeedItemHeaderCellContentView
 - (void)layoutSubviews { %orig; TPLeeSuUpdateHeader((UIView *)self); }
+- (void)didMoveToWindow { %orig; TPLeeSuUpdateHeader((UIView *)self); }
+%end
+%hook UIScrollView
+- (void)setBounds:(CGRect)bounds {
+    BOOL moved = !CGPointEqualToPoint(((UIScrollView *)self).bounds.origin, bounds.origin);
+    %orig;
+    if (moved) TPLeeSuViewportChanged();
+}
 %end
 %end
 

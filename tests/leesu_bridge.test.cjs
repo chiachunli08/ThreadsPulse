@@ -19,10 +19,15 @@ const cases = [
 for (const [file, joined, location] of cases) test(file, () => {
  const p = ctx.parseProfileResponse(fixture(file)); assert.equal(p.joined, joined); assert.equal(p.location, location);
 });
-function bridge(fetch, authenticated = true, host = 'www.threads.com') {
- const context = vm.createContext({window: {}, location:{hostname:host}, URLSearchParams, AbortController, setTimeout, clearTimeout,
+function bridge(fetch, authenticated = true, host = 'www.threads.com', options = {}) {
+ const context = vm.createContext({window: options.window || {}, location:{hostname:host}, URLSearchParams, AbortController, setTimeout, clearTimeout,
+   Date: options.now ? class extends Date {static now() {return options.now();}} : Date,
    crypto:require('node:crypto').webcrypto, fetch,
-   console:{error(){}}, document:{querySelectorAll: selector => selector.startsWith('input') ? [] : [{textContent: authenticated ? '"DTSGInitialData":{"token":"secret-token"},"USER_ID":"123456789012"' : ''}]}
+   console:{error(){}}, document:{querySelectorAll: selector => {
+    if (selector.startsWith('input')) return [];
+    options.onScan?.();
+    return [{textContent: options.script ? options.script() : authenticated ? '"DTSGInitialData":{"token":"secret-token"},"USER_ID":"123456789012"' : ''}];
+   }}
  });
  vm.runInContext(fs.readFileSync(path.join(root,'layout/Library/Application Support/ThreadsPulse/ThreadsPulse.bundle/LeeSuBridge.js'),'utf8'), context);
  return context.window.TPLeeSu;
@@ -55,4 +60,27 @@ test('malformed responses and fetch failures remain recoverable', async()=>{
  const bad = await bridge(async()=>({status:200,ok:true,text:async()=>'<html>login</html>'})).profile('123');
  assert.equal(bad._error,'unavailable');
  const failed = await bridge(async()=>{throw Error('offline')}).profile('123'); assert.equal(failed._error,'network');
+});
+test('reuses session scan for consecutive authors and refreshes it after 60 seconds', async()=>{
+ let now=0, scans=0;
+ const api=bridge(async()=>({status:200,ok:true,text:async()=>fixture('profile-basic-en.txt')}),true,'www.threads.com',{
+  now:()=>now, onScan:()=>scans++
+ });
+ await api.profile('1'); await api.profile('2'); assert.equal(scans,1);
+ now=60001; await api.profile('3'); assert.equal(scans,2);
+});
+test('authentication rejection invalidates cached tokens before another query', async()=>{
+ let token='old-token', calls=0, scans=0;
+ const api=bridge(async(_,options)=>{
+  assert.equal(options.body.get('fb_dtsg'),token); calls++;
+  return calls===1 ? {status:403,ok:false} : {status:200,ok:true,text:async()=>fixture('profile-basic-en.txt')};
+ },true,'www.threads.com',{onScan:()=>scans++,script:()=>`"DTSGInitialData":{"token":"${token}"},"USER_ID":"123456789012"`});
+ assert.equal((await api.profile('1'))._loginRequired,true);
+ token='new-token'; assert.equal((await api.profile('2')).location,'Taiwan'); assert.equal(scans,2);
+});
+test('notifies native readiness at document end with only a boolean',()=>{
+ const messages=[];
+ const window={webkit:{messageHandlers:{TPLeeSuReady:{postMessage:value=>messages.push(value)}}}};
+ bridge(()=>{},true,'www.threads.com',{window}); assert.deepEqual(messages,[true]);
+ messages.length=0; bridge(()=>{},false,'www.threads.com',{window}); assert.deepEqual(messages,[]);
 });
