@@ -2,7 +2,11 @@
 
 [English](README.md) | **繁體中文**
 
-Threads（`com.burbn.barcelona`）的 iOS 增強插件。目前版本：**1.18.3**
+Threads（`com.burbn.barcelona`）的 iOS 增強插件。此 fork 版本：**1.18.4-leesu.3**。
+
+本專案修改自 [mumuisdog/ThreadsPulse](https://github.com/mumuisdog/ThreadsPulse)（基礎版本 1.18.3），並移植 [meettomorrow/lee-su-threads](https://github.com/meettomorrow/lee-su-threads) 的地區查詢與個人資料解析功能。引用版本、原作者聲明、MIT 授權位置與本次修改內容見 [修改來源與致謝](SOURCES.md)。
+
+此儲存庫提供原始碼、資源、測試與建置設定，**不包含 Threads 本體或 IPA 檔案**。
 
 不需要越獄：用 GitHub Actions 就能編譯出注入好的 Threads IPA，再用自己的簽名工具安裝。
 

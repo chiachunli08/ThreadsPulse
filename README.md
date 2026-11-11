@@ -2,7 +2,11 @@
 
 **English** | [繁體中文](README.zh-TW.md)
 
-An iOS tweak for Threads (`com.burbn.barcelona`). Current version: **1.18.3**
+An iOS tweak for Threads (`com.burbn.barcelona`). This fork's version: **1.18.4-leesu.3**.
+
+Modified from [mumuisdog/ThreadsPulse](https://github.com/mumuisdog/ThreadsPulse) (upstream base version 1.18.3), with location queries and profile parsing adapted from [meettomorrow/lee-su-threads](https://github.com/meettomorrow/lee-su-threads). See [Sources and acknowledgements](SOURCES.md) for pinned revisions, original credits, MIT license locations and this fork's changes.
+
+This repository contains source code, resources, tests and build configuration. **It does not include the Threads application or IPA files.**
 
 No jailbreak needed: build your own Threads IPA with ThreadsPulse injected using GitHub Actions, then install it with your own signing tool.
 

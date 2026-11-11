@@ -5,5 +5,5 @@ dist/
 .DS_Store
 *.deb
 *.dylib
-*.ipa
+*.[iI][pP][aA]
 __pycache__/
